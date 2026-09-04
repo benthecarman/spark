@@ -1964,6 +1964,86 @@ func setUpTreeCreationPreparedSplit(t *testing.T, ctx context.Context, dbTX *ent
 	}
 }
 
+func setUpTransferredTreeCreationPreparedSplit(
+	t *testing.T,
+	ctx context.Context,
+	dbTX *ent.Client,
+	rng *rand.ChaCha8,
+	seed byte,
+	createChildAddresses bool,
+) (treeCreationSplitFixture, *ent.TreeNode) {
+	t.Helper()
+
+	originalIdentityPubkey := keys.MustGeneratePrivateKeyFromRand(rng).Public()
+	currentIdentityPubkey := keys.MustGeneratePrivateKeyFromRand(rng).Public()
+	originalUserPrivkey := keys.MustGeneratePrivateKeyFromRand(rng)
+	originalStatePrivkey := keys.MustGeneratePrivateKeyFromRand(rng)
+	transferTweak := keys.MustGeneratePrivateKeyFromRand(rng)
+	currentUserPrivkey := originalUserPrivkey.Add(transferTweak)
+	currentStatePrivkey := originalStatePrivkey.Sub(transferTweak)
+
+	originalKeyshare := createTreeCreationSplitOutputKeyshare(t, ctx, rng, dbTX, originalStatePrivkey)
+	currentKeyshare := createTreeCreationSplitOutputKeyshare(t, ctx, rng, dbTX, currentStatePrivkey)
+	parentOutput := createTreeCreationSplitOutput(t, originalStatePrivkey.Public().Add(originalUserPrivkey.Public()), 100000)
+	parentTx, parentRawTx := createTreeCreationSplitTx(t, wire.OutPoint{Hash: [32]byte{seed}, Index: 0}, parentOutput)
+	parentDepositAddress := createTreeCreationSplitDepositAddress(
+		t,
+		ctx,
+		dbTX,
+		parentOutput,
+		originalIdentityPubkey,
+		originalUserPrivkey.Public(),
+		originalKeyshare,
+	)
+
+	parentTree, err := dbTX.Tree.Create().
+		SetOwnerIdentityPubkey(currentIdentityPubkey).
+		SetNetwork(btcnetwork.Regtest).
+		SetBaseTxid(st.NewTxID(parentTx.TxHash())).
+		SetVout(0).
+		SetStatus(st.TreeStatusAvailable).
+		SetDepositAddress(parentDepositAddress).
+		Save(ctx)
+	require.NoError(t, err)
+	parentNode, err := dbTX.TreeNode.Create().
+		SetTree(parentTree).
+		SetNetwork(btcnetwork.Regtest).
+		SetStatus(st.TreeNodeStatusAvailable).
+		SetOwnerIdentityPubkey(currentIdentityPubkey).
+		SetOwnerSigningPubkey(currentUserPrivkey.Public()).
+		SetValue(uint64(parentOutput.Value)).
+		SetVerifyingPubkey(currentStatePrivkey.Public().Add(currentUserPrivkey.Public())).
+		SetSigningKeyshare(currentKeyshare).
+		SetRawTx(parentRawTx).
+		SetVout(0).
+		Save(ctx)
+	require.NoError(t, err)
+
+	leftUserPrivkey := keys.MustGeneratePrivateKeyFromRand(rng)
+	rightUserPrivkey := currentUserPrivkey.Sub(leftUserPrivkey)
+	leftStatePrivkey := keys.MustGeneratePrivateKeyFromRand(rng)
+	rightStatePrivkey := currentStatePrivkey.Sub(leftStatePrivkey)
+	leftKeyshare := createTreeCreationSplitOutputKeyshare(t, ctx, rng, dbTX, leftStatePrivkey)
+	rightKeyshare := createTreeCreationSplitOutputKeyshare(t, ctx, rng, dbTX, rightStatePrivkey)
+	leftOutput := createTreeCreationSplitOutput(t, leftStatePrivkey.Public().Add(leftUserPrivkey.Public()), 50000)
+	rightOutput := createTreeCreationSplitOutput(t, rightStatePrivkey.Public().Add(rightUserPrivkey.Public()), 50000)
+	if createChildAddresses {
+		createTreeCreationSplitDepositAddress(t, ctx, dbTX, leftOutput, currentIdentityPubkey, leftUserPrivkey.Public(), leftKeyshare)
+		createTreeCreationSplitDepositAddress(t, ctx, dbTX, rightOutput, currentIdentityPubkey, rightUserPrivkey.Public(), rightKeyshare)
+	}
+
+	return treeCreationSplitFixture{
+		identityPubkey:   currentIdentityPubkey,
+		parentUserPubkey: currentUserPrivkey.Public(),
+		parentTx:         parentTx,
+		parentRawTx:      parentRawTx,
+		leftUserPubkey:   leftUserPrivkey.Public(),
+		rightUserPubkey:  rightUserPrivkey.Public(),
+		leftOutput:       leftOutput,
+		rightOutput:      rightOutput,
+	}, parentNode
+}
+
 func (f treeCreationSplitFixture) createTreeRequest(rng *rand.ChaCha8, splitRawTx []byte, directSplitRawTx []byte, children []*pb.CreationNode) *pb.CreateTreeRequest {
 	parentTxid := f.parentTx.TxHash()
 	node := &pb.CreationNode{
@@ -2119,6 +2199,74 @@ func TestPrepareSigningJobsV2AllowsInternalSplitNodeWithoutRefundJobs(t *testing
 		fixture.createTreeRequest(rng, splitRawTx, directSplitRawTx, children),
 		true,
 	)
+
+	require.NoError(t, err)
+	require.Len(t, signingJobs, 12)
+	require.Len(t, nodes, 3)
+}
+
+func TestPrepareTreeAddressAllowsTransferredParentNode(t *testing.T) {
+	rng := rand.NewChaCha8([32]byte{94})
+	ctx, _ := db.ConnectToTestPostgres(t)
+	dbTX, err := ent.GetDbFromContext(ctx)
+	require.NoError(t, err)
+
+	fixture, parentNode := setUpTransferredTreeCreationPreparedSplit(t, ctx, dbTX, rng, 0x94, false)
+	handler := createTestHandler()
+	handler.config.Identifier = "self"
+	handler.config.SigningOperatorMap = map[string]*so.SigningOperator{
+		"self": {Identifier: "self"},
+	}
+	response, err := handler.PrepareTreeAddress(ctx, &pb.PrepareTreeAddressRequest{
+		UserIdentityPublicKey: fixture.identityPubkey.Serialize(),
+		Source: &pb.PrepareTreeAddressRequest_ParentNodeOutput{
+			ParentNodeOutput: &pb.NodeOutput{NodeId: parentNode.ID.String(), Vout: 0},
+		},
+		Node: &pb.AddressRequestNode{
+			UserPublicKey: fixture.parentUserPubkey.Serialize(),
+			Children: []*pb.AddressRequestNode{
+				{UserPublicKey: fixture.leftUserPubkey.Serialize()},
+				{UserPublicKey: fixture.rightUserPubkey.Serialize()},
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	require.Len(t, response.GetNode().GetChildren(), 2)
+}
+
+func TestPrepareSigningJobsV2AllowsTransferredParentNode(t *testing.T) {
+	rng := rand.NewChaCha8([32]byte{95})
+	ctx, _ := db.ConnectToTestPostgres(t)
+	dbTX, err := ent.GetDbFromContext(ctx)
+	require.NoError(t, err)
+
+	fixture, parentNode := setUpTransferredTreeCreationPreparedSplit(t, ctx, dbTX, rng, 0x95, true)
+	parentTxid := fixture.parentTx.TxHash()
+	splitTx, splitRawTx := createTreeCreationSplitTx(
+		t,
+		wire.OutPoint{Hash: parentTxid, Index: 0},
+		fixture.leftOutput,
+		fixture.rightOutput,
+		common.EphemeralAnchorOutput(),
+	)
+	_, directSplitRawTx := createTreeCreationSplitTx(
+		t,
+		wire.OutPoint{Hash: parentTxid, Index: 0},
+		feeAdjustedTreeCreationSplitOutput(fixture.leftOutput),
+		feeAdjustedTreeCreationSplitOutput(fixture.rightOutput),
+	)
+	children := []*pb.CreationNode{
+		createTreeCreationDirectLeaf(t, rng, wire.OutPoint{Hash: splitTx.TxHash(), Index: 0}, fixture.leftOutput, fixture.leftUserPubkey),
+		createTreeCreationDirectLeaf(t, rng, wire.OutPoint{Hash: splitTx.TxHash(), Index: 1}, fixture.rightOutput, fixture.rightUserPubkey),
+	}
+	request := fixture.createTreeRequest(rng, splitRawTx, directSplitRawTx, children)
+	request.Source = &pb.CreateTreeRequest_ParentNodeOutput{
+		ParentNodeOutput: &pb.NodeOutput{NodeId: parentNode.ID.String(), Vout: 0},
+	}
+
+	handler := createTestHandler()
+	signingJobs, nodes, err := handler.prepareSigningJobs(ctx, request, true)
 
 	require.NoError(t, err)
 	require.Len(t, signingJobs, 12)
@@ -2328,12 +2476,12 @@ func createTreeCreationSplitDepositAddress(
 	ownerIdentityPubkey keys.Public,
 	ownerSigningPubkey keys.Public,
 	signingKeyshare *ent.SigningKeyshare,
-) {
+) *ent.DepositAddress {
 	t.Helper()
 
 	address, err := common.P2TRAddressFromPkScript(output.PkScript, btcnetwork.Regtest)
 	require.NoError(t, err)
-	_, err = dbTX.DepositAddress.Create().
+	depositAddress, err := dbTX.DepositAddress.Create().
 		SetAddress(address).
 		SetOwnerIdentityPubkey(ownerIdentityPubkey).
 		SetOwnerSigningPubkey(ownerSigningPubkey).
@@ -2341,6 +2489,7 @@ func createTreeCreationSplitDepositAddress(
 		SetNetwork(btcnetwork.Regtest).
 		Save(ctx)
 	require.NoError(t, err)
+	return depositAddress
 }
 
 func createTreeCreationOwnerAuthTx(t *testing.T, pkScript []byte) []byte {

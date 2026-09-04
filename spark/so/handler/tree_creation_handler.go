@@ -553,6 +553,7 @@ func (h *TreeCreationHandler) PrepareTreeAddress(ctx context.Context, req *pb.Pr
 	}
 
 	var network btcnetwork.Network
+	var parentNode *ent.TreeNode
 	switch reqSource := req.GetSource().(type) {
 	case *pb.PrepareTreeAddressRequest_ParentNodeOutput:
 		nodeID, err := uuid.Parse(req.GetParentNodeOutput().GetNodeId())
@@ -563,18 +564,18 @@ func (h *TreeCreationHandler) PrepareTreeAddress(ctx context.Context, req *pb.Pr
 		if err != nil {
 			return nil, fmt.Errorf("failed to get or create current tx for request: %w", err)
 		}
-		treeNode, err := db.TreeNode.Get(ctx, nodeID)
+		parentNode, err = db.TreeNode.Get(ctx, nodeID)
 		if err != nil {
 			return nil, err
 		}
 
-		if !reqUserIDPubKey.Equals(treeNode.OwnerIdentityPubkey) {
+		if !reqUserIDPubKey.Equals(parentNode.OwnerIdentityPubkey) {
 			return nil, sparkerrors.PermissionDeniedNoReadAccess(
 				fmt.Errorf("user identity public key does not match tree node owner"),
 			)
 		}
 
-		nodeTree, err := treeNode.QueryTree().Only(ctx)
+		nodeTree, err := parentNode.QueryTree().Only(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -584,22 +585,34 @@ func (h *TreeCreationHandler) PrepareTreeAddress(ctx context.Context, req *pb.Pr
 		if err != nil {
 			return nil, err
 		}
+	default:
+		return nil, errors.New("invalid source")
 	}
 
 	parentDepositAddress, err := h.findParentDepositAddress(ctx, network, req)
 	if err != nil {
 		return nil, err
 	}
-	if !reqUserIDPubKey.Equals(parentDepositAddress.OwnerIdentityPubkey) {
-		return nil, sparkerrors.PermissionDeniedNoReadAccess(
-			fmt.Errorf("user identity public key does not match deposit address owner"),
-		)
+	var signingKeyshare *ent.SigningKeyshare
+	var parentUserPublicKey keys.Public
+	if parentNode == nil {
+		if !reqUserIDPubKey.Equals(parentDepositAddress.OwnerIdentityPubkey) {
+			return nil, sparkerrors.PermissionDeniedNoReadAccess(
+				fmt.Errorf("user identity public key does not match deposit address owner"),
+			)
+		}
+		signingKeyshare, err = parentDepositAddress.QuerySigningKeyshare().First(ctx)
+		if err != nil {
+			return nil, err
+		}
+		parentUserPublicKey = parentDepositAddress.OwnerSigningPubkey
+	} else {
+		signingKeyshare, err = parentNode.QuerySigningKeyshare().First(ctx)
+		if err != nil {
+			return nil, err
+		}
+		parentUserPublicKey = parentNode.OwnerSigningPubkey
 	}
-	signingKeyshare, err := parentDepositAddress.QuerySigningKeyshare().First(ctx)
-	if err != nil {
-		return nil, err
-	}
-	parentUserPublicKey := parentDepositAddress.OwnerSigningPubkey
 
 	keyCount, err := h.validateAndCountTreeAddressNodes(ctx, parentUserPublicKey, []*pb.AddressRequestNode{req.GetNode()})
 	if err != nil {
@@ -744,20 +757,31 @@ func (h *TreeCreationHandler) prepareSigningJobs(ctx context.Context, req *pb.Cr
 	if err != nil {
 		return nil, nil, err
 	}
-	if !userIDPubKey.Equals(depositAddress.OwnerIdentityPubkey) {
-		return nil, nil, sparkerrors.PermissionDeniedNoReadAccess(
-			fmt.Errorf("user identity public key does not match deposit address owner"),
-		)
-	}
-	keyshare, err := depositAddress.QuerySigningKeyshare().First(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	unchainUtxo := req.GetOnChainUtxo()
-	onChain := depositAddress.ConfirmationHeight != 0
-	if depositAddress.ConfirmationTxid != "" && unchainUtxo != nil {
-		if depositAddress.ConfirmationTxid != hex.EncodeToString(unchainUtxo.GetTxid()) {
-			return nil, nil, errors.New("confirmation txid does not match utxo txid")
+	var keyshare *ent.SigningKeyshare
+	var parentUserPublicKey keys.Public
+	var onChain bool
+	if parentNode != nil {
+		keyshare, err = parentNode.QuerySigningKeyshare().First(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+		parentUserPublicKey = parentNode.OwnerSigningPubkey
+	} else {
+		if !userIDPubKey.Equals(depositAddress.OwnerIdentityPubkey) {
+			return nil, nil, sparkerrors.PermissionDeniedNoReadAccess(
+				fmt.Errorf("user identity public key does not match deposit address owner"),
+			)
+		}
+		keyshare, err = depositAddress.QuerySigningKeyshare().First(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+		parentUserPublicKey = depositAddress.OwnerSigningPubkey
+		onChain = depositAddress.ConfirmationHeight != 0
+		if depositAddress.ConfirmationTxid != "" {
+			if depositAddress.ConfirmationTxid != hex.EncodeToString(req.GetOnChainUtxo().GetTxid()) {
+				return nil, nil, errors.New("confirmation txid does not match utxo txid")
+			}
 		}
 	}
 
@@ -765,7 +789,7 @@ func (h *TreeCreationHandler) prepareSigningJobs(ctx context.Context, req *pb.Cr
 		output:     parentOutput,
 		outPoint:   parentOutPoint,
 		node:       req.GetNode(),
-		userPubKey: depositAddress.OwnerSigningPubkey,
+		userPubKey: parentUserPublicKey,
 		keyshare:   keyshare,
 		parentNode: parentNode,
 		vout:       vout,
