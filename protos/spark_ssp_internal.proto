@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package spark_ssp_internal;
+
+option go_package = "github.com/lightsparkdev/spark/proto/spark_ssp_internal";
+
+import "spark.proto";
+
+service SparkSspInternalService {
+    rpc prepare_tree_address(spark.PrepareTreeAddressRequest) returns (spark.PrepareTreeAddressResponse) {}
+    rpc create_tree(spark.CreateTreeRequest) returns (spark.CreateTreeResponse) {}
+}

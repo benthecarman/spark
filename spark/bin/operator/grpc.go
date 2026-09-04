@@ -12,6 +12,7 @@ import (
 	pbauthn "github.com/lightsparkdev/spark/proto/spark_authn"
 	pbinternal "github.com/lightsparkdev/spark/proto/spark_internal"
 	pbpartner "github.com/lightsparkdev/spark/proto/spark_partner"
+	pbssp "github.com/lightsparkdev/spark/proto/spark_ssp_internal"
 	pbtoken "github.com/lightsparkdev/spark/proto/spark_token"
 	pbtokeninternal "github.com/lightsparkdev/spark/proto/spark_token_internal"
 	"github.com/lightsparkdev/spark/so"
@@ -55,6 +56,19 @@ func RegisterPublicGrpcServers(
 	sparkTokenServer := sparkgrpc.NewSparkTokenServer(config, config, dbClient)
 	pbtoken.RegisterSparkTokenServiceServer(grpcServer, sparkTokenServer)
 
+	if err := registerAuthnGrpcServer(grpcServer, args, config, sessionTokenCreatorVerifier); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func registerAuthnGrpcServer(
+	grpcServer *grpc.Server,
+	args *args,
+	config *so.Config,
+	sessionTokenCreatorVerifier *authninternal.SessionTokenCreatorVerifier,
+) error {
 	authnServer, err := sparkgrpc.NewAuthnServer(sparkgrpc.AuthnServerConfig{
 		IdentityPrivateKey: config.IdentityPrivateKey,
 		ChallengeTimeout:   args.ChallengeTimeout,
@@ -65,6 +79,21 @@ func RegisterPublicGrpcServers(
 	}
 	pbauthn.RegisterSparkAuthnServiceServer(grpcServer, authnServer)
 
+	return nil
+}
+
+// RegisterSSPGrpcServers registers the SSP-only API. Callers must place this on its dedicated listener.
+func RegisterSSPGrpcServers(
+	grpcServer *grpc.Server,
+	args *args,
+	config *so.Config,
+	sessionTokenCreatorVerifier *authninternal.SessionTokenCreatorVerifier,
+) error {
+	if err := registerAuthnGrpcServer(grpcServer, args, config, sessionTokenCreatorVerifier); err != nil {
+		return err
+	}
+	sspServer := sparkgrpc.NewSparkSspInternalServer(config)
+	pbssp.RegisterSparkSspInternalServiceServer(grpcServer, sspServer)
 	return nil
 }
 

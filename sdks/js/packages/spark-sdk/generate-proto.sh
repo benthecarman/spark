@@ -26,6 +26,7 @@ ARGS=(
   "--proto_path=../../../../protos"
   "spark_token_legacy.proto"
   "spark.proto"
+  "spark_ssp_internal.proto"
   "spark_token.proto"
   "mock.proto"
   "spark_authn.proto"

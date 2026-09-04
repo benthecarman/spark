@@ -20,6 +20,7 @@ import (
 	pbauthn "github.com/lightsparkdev/spark/proto/spark_authn"
 	pbinternal "github.com/lightsparkdev/spark/proto/spark_internal"
 	pbpartner "github.com/lightsparkdev/spark/proto/spark_partner"
+	pbssp "github.com/lightsparkdev/spark/proto/spark_ssp_internal"
 	pbtoken "github.com/lightsparkdev/spark/proto/spark_token"
 	pbtokeninternal "github.com/lightsparkdev/spark/proto/spark_token_internal"
 )
@@ -112,6 +113,15 @@ func init() {
 	register(mockServicePolicies())
 	register(healthServicePolicies())
 	register(sparkPartnerServicePolicies())
+	register(sparkSspInternalServicePolicies())
+}
+
+func sparkSspInternalServicePolicies() map[string]Policy {
+	sspInternal := Policy{AuthMode: AuthSession, InternalOnly: true}
+	return map[string]Policy{
+		pbssp.SparkSspInternalService_PrepareTreeAddress_FullMethodName: sspInternal,
+		pbssp.SparkSspInternalService_CreateTree_FullMethodName:         sspInternal,
+	}
 }
 
 func sparkAuthnPolicies() map[string]Policy {

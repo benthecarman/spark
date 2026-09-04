@@ -15,12 +15,12 @@ import (
 	pbauthn "github.com/lightsparkdev/spark/proto/spark_authn"
 	pbinternal "github.com/lightsparkdev/spark/proto/spark_internal"
 	pbpartner "github.com/lightsparkdev/spark/proto/spark_partner"
+	pbssp "github.com/lightsparkdev/spark/proto/spark_ssp_internal"
 	pbtoken "github.com/lightsparkdev/spark/proto/spark_token"
 	pbtokeninternal "github.com/lightsparkdev/spark/proto/spark_token_internal"
 )
 
-// baseRegisteredServiceDescs is the set of ServiceDesc values registered on every operator binary. Build-tag-gated
-// services (e.g. SparkSspInternalService under lightspark) extend this list in build-tagged test files.
+// baseRegisteredServiceDescs is the set of ServiceDesc values registered across the operator listeners.
 var baseRegisteredServiceDescs = []*grpc.ServiceDesc{
 	&pbauthn.SparkAuthnService_ServiceDesc,
 	&pbspark.SparkService_ServiceDesc,
@@ -31,6 +31,7 @@ var baseRegisteredServiceDescs = []*grpc.ServiceDesc{
 	&pbdkg.DKGService_ServiceDesc,
 	&pbgossip.GossipService_ServiceDesc,
 	&pbmock.MockService_ServiceDesc,
+	&pbssp.SparkSspInternalService_ServiceDesc,
 }
 
 // extraRegisteredMethods covers methods registered without a generated ServiceDesc.
@@ -115,6 +116,12 @@ func TestLookupBehavior(t *testing.T) {
 			name:                 "internal-only SO-to-SO",
 			method:               pbinternal.SparkInternalService_FinalizeTransfer_FullMethodName,
 			expectedAuthMode:     AuthOperatorBrontide,
+			expectedInternalOnly: true,
+		},
+		{
+			name:                 "SSP split",
+			method:               pbssp.SparkSspInternalService_CreateTree_FullMethodName,
+			expectedAuthMode:     AuthSession,
 			expectedInternalOnly: true,
 		},
 		{
