@@ -2921,6 +2921,19 @@ export interface InitiateSwapPrimaryTransferResponse {
   signingResults: LeafRefundTxSigningResult[];
 }
 
+export interface InitiateSwapCounterTransferRequest {
+  /** Counter transfer with refunds and key tweaks signed by the SSP. */
+  transfer:
+    | StartTransferRequest
+    | undefined;
+  /** Adaptor public keys from the user's primary swap request. */
+  adaptorPublicKeys:
+    | AdaptorPublicKeyPackage
+    | undefined;
+  /** The primary transfer that this counter transfer settles. */
+  primaryTransferId: string;
+}
+
 /**
  * Adaptor public key is derived from the secret `t` using formula:
  * ```text
@@ -23631,6 +23644,104 @@ export const InitiateSwapPrimaryTransferResponse: MessageFns<InitiateSwapPrimary
   },
 };
 
+function createBaseInitiateSwapCounterTransferRequest(): InitiateSwapCounterTransferRequest {
+  return { transfer: undefined, adaptorPublicKeys: undefined, primaryTransferId: "" };
+}
+
+export const InitiateSwapCounterTransferRequest: MessageFns<InitiateSwapCounterTransferRequest> = {
+  encode(message: InitiateSwapCounterTransferRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.transfer !== undefined) {
+      StartTransferRequest.encode(message.transfer, writer.uint32(10).fork()).join();
+    }
+    if (message.adaptorPublicKeys !== undefined) {
+      AdaptorPublicKeyPackage.encode(message.adaptorPublicKeys, writer.uint32(18).fork()).join();
+    }
+    if (message.primaryTransferId !== "") {
+      writer.uint32(26).string(message.primaryTransferId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): InitiateSwapCounterTransferRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseInitiateSwapCounterTransferRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.transfer = StartTransferRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.adaptorPublicKeys = AdaptorPublicKeyPackage.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.primaryTransferId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): InitiateSwapCounterTransferRequest {
+    return {
+      transfer: isSet(object.transfer) ? StartTransferRequest.fromJSON(object.transfer) : undefined,
+      adaptorPublicKeys: isSet(object.adaptorPublicKeys)
+        ? AdaptorPublicKeyPackage.fromJSON(object.adaptorPublicKeys)
+        : undefined,
+      primaryTransferId: isSet(object.primaryTransferId) ? globalThis.String(object.primaryTransferId) : "",
+    };
+  },
+
+  toJSON(message: InitiateSwapCounterTransferRequest): unknown {
+    const obj: any = {};
+    if (message.transfer !== undefined) {
+      obj.transfer = StartTransferRequest.toJSON(message.transfer);
+    }
+    if (message.adaptorPublicKeys !== undefined) {
+      obj.adaptorPublicKeys = AdaptorPublicKeyPackage.toJSON(message.adaptorPublicKeys);
+    }
+    if (message.primaryTransferId !== "") {
+      obj.primaryTransferId = message.primaryTransferId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<InitiateSwapCounterTransferRequest>): InitiateSwapCounterTransferRequest {
+    return InitiateSwapCounterTransferRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<InitiateSwapCounterTransferRequest>): InitiateSwapCounterTransferRequest {
+    const message = createBaseInitiateSwapCounterTransferRequest();
+    message.transfer = (object.transfer !== undefined && object.transfer !== null)
+      ? StartTransferRequest.fromPartial(object.transfer)
+      : undefined;
+    message.adaptorPublicKeys = (object.adaptorPublicKeys !== undefined && object.adaptorPublicKeys !== null)
+      ? AdaptorPublicKeyPackage.fromPartial(object.adaptorPublicKeys)
+      : undefined;
+    message.primaryTransferId = object.primaryTransferId ?? "";
+    return message;
+  },
+};
+
 function createBaseAdaptorPublicKeyPackage(): AdaptorPublicKeyPackage {
   return {
     adaptorPublicKey: new Uint8Array(0),
@@ -26364,6 +26475,19 @@ export const SparkServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    /**
+     * Initiates the SSP counter transfer that atomically settles both sides of
+     * a Swap V3 operation. The authenticated sender must be the receiver of
+     * the referenced primary transfer.
+     */
+    initiate_swap_counter_transfer: {
+      name: "initiate_swap_counter_transfer",
+      requestType: InitiateSwapCounterTransferRequest,
+      requestStream: false,
+      responseType: StartTransferResponse,
+      responseStream: false,
+      options: {},
+    },
     update_wallet_setting: {
       name: "update_wallet_setting",
       requestType: UpdateWalletSettingRequest,
@@ -26641,6 +26765,15 @@ export interface SparkServiceImplementation<CallContextExt = {}> {
     request: InitiateSwapPrimaryTransferRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<InitiateSwapPrimaryTransferResponse>>;
+  /**
+   * Initiates the SSP counter transfer that atomically settles both sides of
+   * a Swap V3 operation. The authenticated sender must be the receiver of
+   * the referenced primary transfer.
+   */
+  initiate_swap_counter_transfer(
+    request: InitiateSwapCounterTransferRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<StartTransferResponse>>;
   update_wallet_setting(
     request: UpdateWalletSettingRequest,
     context: CallContext & CallContextExt,
@@ -26891,6 +27024,15 @@ export interface SparkServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<InitiateSwapPrimaryTransferRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<InitiateSwapPrimaryTransferResponse>;
+  /**
+   * Initiates the SSP counter transfer that atomically settles both sides of
+   * a Swap V3 operation. The authenticated sender must be the receiver of
+   * the referenced primary transfer.
+   */
+  initiate_swap_counter_transfer(
+    request: DeepPartial<InitiateSwapCounterTransferRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<StartTransferResponse>;
   update_wallet_setting(
     request: DeepPartial<UpdateWalletSettingRequest>,
     options?: CallOptions & CallOptionsExt,

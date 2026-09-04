@@ -507,3 +507,19 @@ func initiateCounterTransferConsensus(ctx context.Context, config *so.Config, re
 	}
 	return flow.response, nil
 }
+
+// InitiateSwapCounterTransfer settles a Swap V3 primary transfer with an
+// authenticated counter transfer from the primary receiver.
+func (h *TransferHandler) InitiateSwapCounterTransfer(ctx context.Context, req *pb.InitiateSwapCounterTransferRequest) (*pb.StartTransferResponse, error) {
+	if req.GetTransfer() == nil {
+		return nil, sparkerrors.InvalidArgumentMissingField(fmt.Errorf("transfer is required"))
+	}
+	if req.GetAdaptorPublicKeys() == nil {
+		return nil, sparkerrors.InvalidArgumentMissingField(fmt.Errorf("adaptor_public_keys is required"))
+	}
+	return initiateCounterTransferConsensus(ctx, h.config, &pbinternal.InitiateCounterTransferRequest{
+		Transfer:          req.GetTransfer(),
+		AdaptorPublicKeys: req.GetAdaptorPublicKeys(),
+		PrimaryTransferId: req.GetPrimaryTransferId(),
+	})
+}

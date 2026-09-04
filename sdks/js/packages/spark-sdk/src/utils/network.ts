@@ -51,6 +51,23 @@ export const getNetwork = (network: Network): typeof btc.NETWORK =>
   NetworkConfig[network];
 
 /**
+ * SIGNET and testnet share the BOLT11 `lntb` human-readable prefix, so an
+ * invoice parser cannot distinguish them. A SIGNET wallet can therefore pay
+ * an invoice parsed as TESTNET. Other cross-network combinations stay invalid.
+ */
+export function isLightningInvoiceNetworkCompatible(
+  invoiceNetwork: Network | null,
+  walletNetwork: Network,
+): invoiceNetwork is Network {
+  return (
+    invoiceNetwork === walletNetwork ||
+    (invoiceNetwork === Network.TESTNET && walletNetwork === Network.SIGNET) ||
+    (invoiceNetwork === Network.REGTEST &&
+      (walletNetwork === Network.REGTEST || walletNetwork === Network.LOCAL))
+  );
+}
+
+/**
  * Utility function to determine the network from a Bitcoin address.
  *
  * @param {string} address - The Bitcoin address

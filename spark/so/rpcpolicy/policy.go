@@ -175,6 +175,7 @@ func sparkServicePolicies() map[string]Policy {
 		pbspark.SparkService_GetUtxosForIdentity_FullMethodName:                 {AuthMode: AuthAnonymous},
 		pbspark.SparkService_QuerySparkInvoices_FullMethodName:                  {AuthMode: AuthAnonymous},
 		pbspark.SparkService_InitiateSwapPrimaryTransfer_FullMethodName:         {AuthMode: AuthSession},
+		pbspark.SparkService_InitiateSwapCounterTransfer_FullMethodName:         {AuthMode: AuthSession},
 		pbspark.SparkService_UpdateWalletSetting_FullMethodName:                 {AuthMode: AuthSession},
 		pbspark.SparkService_QueryWalletSetting_FullMethodName:                  {AuthMode: AuthSession},
 		pbspark.SparkService_CreateDelegationGrant_FullMethodName:               {AuthMode: AuthSession},

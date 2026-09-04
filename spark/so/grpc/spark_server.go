@@ -353,6 +353,12 @@ func (s *SparkServer) InitiateSwapPrimaryTransfer(ctx context.Context, req *pb.I
 	return &pb.InitiateSwapPrimaryTransferResponse{Transfer: res.GetTransfer(), SigningResults: res.GetSigningResults()}, nil
 }
 
+// InitiateSwapCounterTransfer settles both legs of a Swap V3 operation.
+func (s *SparkServer) InitiateSwapCounterTransfer(ctx context.Context, req *pb.InitiateSwapCounterTransferRequest) (*pb.StartTransferResponse, error) {
+	transferHandler := handler.NewTransferHandler(s.config)
+	return transferHandler.InitiateSwapCounterTransfer(ctx, req)
+}
+
 func (s *SparkServer) UpdateWalletSetting(ctx context.Context, req *pb.UpdateWalletSettingRequest) (*pb.UpdateWalletSettingResponse, error) {
 	walletSettingHandler := handler.NewWalletSettingHandler(s.config)
 	return walletSettingHandler.UpdateWalletSetting(ctx, req)

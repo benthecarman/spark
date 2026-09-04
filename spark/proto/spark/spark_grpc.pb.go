@@ -60,6 +60,7 @@ const (
 	SparkService_GetUtxosForIdentity_FullMethodName                 = "/spark.SparkService/get_utxos_for_identity"
 	SparkService_QuerySparkInvoices_FullMethodName                  = "/spark.SparkService/query_spark_invoices"
 	SparkService_InitiateSwapPrimaryTransfer_FullMethodName         = "/spark.SparkService/initiate_swap_primary_transfer"
+	SparkService_InitiateSwapCounterTransfer_FullMethodName         = "/spark.SparkService/initiate_swap_counter_transfer"
 	SparkService_UpdateWalletSetting_FullMethodName                 = "/spark.SparkService/update_wallet_setting"
 	SparkService_QueryWalletSetting_FullMethodName                  = "/spark.SparkService/query_wallet_setting"
 	SparkService_CreateDelegationGrant_FullMethodName               = "/spark.SparkService/create_delegation_grant"
@@ -145,6 +146,10 @@ type SparkServiceClient interface {
 	// transfer package, but the SOs will not tweak the keys at this stage of the flow.
 	// It will be done later, when the SSP initiates a counter swap.
 	InitiateSwapPrimaryTransfer(ctx context.Context, in *InitiateSwapPrimaryTransferRequest, opts ...grpc.CallOption) (*InitiateSwapPrimaryTransferResponse, error)
+	// Initiates the SSP counter transfer that atomically settles both sides of
+	// a Swap V3 operation. The authenticated sender must be the receiver of
+	// the referenced primary transfer.
+	InitiateSwapCounterTransfer(ctx context.Context, in *InitiateSwapCounterTransferRequest, opts ...grpc.CallOption) (*StartTransferResponse, error)
 	UpdateWalletSetting(ctx context.Context, in *UpdateWalletSettingRequest, opts ...grpc.CallOption) (*UpdateWalletSettingResponse, error)
 	QueryWalletSetting(ctx context.Context, in *QueryWalletSettingRequest, opts ...grpc.CallOption) (*QueryWalletSettingResponse, error)
 	// Spark Pull: delegated spending via parallel key decomposition. An owner
@@ -578,6 +583,16 @@ func (c *sparkServiceClient) InitiateSwapPrimaryTransfer(ctx context.Context, in
 	return out, nil
 }
 
+func (c *sparkServiceClient) InitiateSwapCounterTransfer(ctx context.Context, in *InitiateSwapCounterTransferRequest, opts ...grpc.CallOption) (*StartTransferResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StartTransferResponse)
+	err := c.cc.Invoke(ctx, SparkService_InitiateSwapCounterTransfer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sparkServiceClient) UpdateWalletSetting(ctx context.Context, in *UpdateWalletSettingRequest, opts ...grpc.CallOption) (*UpdateWalletSettingResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateWalletSettingResponse)
@@ -733,6 +748,10 @@ type SparkServiceServer interface {
 	// transfer package, but the SOs will not tweak the keys at this stage of the flow.
 	// It will be done later, when the SSP initiates a counter swap.
 	InitiateSwapPrimaryTransfer(context.Context, *InitiateSwapPrimaryTransferRequest) (*InitiateSwapPrimaryTransferResponse, error)
+	// Initiates the SSP counter transfer that atomically settles both sides of
+	// a Swap V3 operation. The authenticated sender must be the receiver of
+	// the referenced primary transfer.
+	InitiateSwapCounterTransfer(context.Context, *InitiateSwapCounterTransferRequest) (*StartTransferResponse, error)
 	UpdateWalletSetting(context.Context, *UpdateWalletSettingRequest) (*UpdateWalletSettingResponse, error)
 	QueryWalletSetting(context.Context, *QueryWalletSettingRequest) (*QueryWalletSettingResponse, error)
 	// Spark Pull: delegated spending via parallel key decomposition. An owner
@@ -876,6 +895,9 @@ func (UnimplementedSparkServiceServer) QuerySparkInvoices(context.Context, *Quer
 }
 func (UnimplementedSparkServiceServer) InitiateSwapPrimaryTransfer(context.Context, *InitiateSwapPrimaryTransferRequest) (*InitiateSwapPrimaryTransferResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method InitiateSwapPrimaryTransfer not implemented")
+}
+func (UnimplementedSparkServiceServer) InitiateSwapCounterTransfer(context.Context, *InitiateSwapCounterTransferRequest) (*StartTransferResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method InitiateSwapCounterTransfer not implemented")
 }
 func (UnimplementedSparkServiceServer) UpdateWalletSetting(context.Context, *UpdateWalletSettingRequest) (*UpdateWalletSettingResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateWalletSetting not implemented")
@@ -1635,6 +1657,24 @@ func _SparkService_InitiateSwapPrimaryTransfer_Handler(srv interface{}, ctx cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SparkService_InitiateSwapCounterTransfer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InitiateSwapCounterTransferRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SparkServiceServer).InitiateSwapCounterTransfer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SparkService_InitiateSwapCounterTransfer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SparkServiceServer).InitiateSwapCounterTransfer(ctx, req.(*InitiateSwapCounterTransferRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SparkService_UpdateWalletSetting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateWalletSettingRequest)
 	if err := dec(in); err != nil {
@@ -1941,6 +1981,10 @@ var SparkService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "initiate_swap_primary_transfer",
 			Handler:    _SparkService_InitiateSwapPrimaryTransfer_Handler,
+		},
+		{
+			MethodName: "initiate_swap_counter_transfer",
+			Handler:    _SparkService_InitiateSwapCounterTransfer_Handler,
 		},
 		{
 			MethodName: "update_wallet_setting",

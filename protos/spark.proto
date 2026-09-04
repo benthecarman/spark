@@ -105,6 +105,11 @@ service SparkService {
     // It will be done later, when the SSP initiates a counter swap.
     rpc initiate_swap_primary_transfer(InitiateSwapPrimaryTransferRequest) returns (InitiateSwapPrimaryTransferResponse) {}
 
+    // Initiates the SSP counter transfer that atomically settles both sides of
+    // a Swap V3 operation. The authenticated sender must be the receiver of
+    // the referenced primary transfer.
+    rpc initiate_swap_counter_transfer(InitiateSwapCounterTransferRequest) returns (StartTransferResponse) {}
+
     rpc update_wallet_setting(UpdateWalletSettingRequest) returns (UpdateWalletSettingResponse) {}
     rpc query_wallet_setting(QueryWalletSettingRequest) returns (QueryWalletSettingResponse) {}
 
@@ -1943,6 +1948,15 @@ message InitiateSwapPrimaryTransferRequest {
 message InitiateSwapPrimaryTransferResponse {
     Transfer transfer = 1;
     repeated LeafRefundTxSigningResult signing_results = 2;
+}
+
+message InitiateSwapCounterTransferRequest {
+    // Counter transfer with refunds and key tweaks signed by the SSP.
+    StartTransferRequest transfer = 1;
+    // Adaptor public keys from the user's primary swap request.
+    AdaptorPublicKeyPackage adaptor_public_keys = 2;
+    // The primary transfer that this counter transfer settles.
+    string primary_transfer_id = 3 [(validate.rules).string.uuid = true];
 }
 
 // Adaptor public key is derived from the secret `t` using formula:

@@ -396,15 +396,18 @@ describe("signing a receive quote", () => {
     expect(signMessageWithIdentityKey).not.toHaveBeenCalled();
   });
 
-  it("signs on a network the quote request collapses onto regtest", async () => {
-    // The SSP is asked for REGTEST on every non-mainnet network, so validating
-    // against the wallet's own network would refuse its own quote here.
+  it("signs a quote issued for the wallet's signet network", async () => {
     const { wallet } = walletWithSigner();
     (
       wallet as unknown as { config: { getNetwork: () => WalletNetwork } }
     ).config.getNetwork = () => WalletNetwork.SIGNET;
+    const signet = manifestOf(
+      [edge(RECEIVER, 100_000), edge(SSP, 2_000)],
+      [lsFee(2_000)],
+    );
+    signet.network = Network.SIGNET;
 
-    const { invoicedSats } = await sign(wallet, quoteFor(FEE_BEARING));
+    const { invoicedSats } = await sign(wallet, quoteFor(signet));
 
     expect(invoicedSats).toBe(102_000);
   });
@@ -494,6 +497,17 @@ describe("signing a receive quote", () => {
 });
 
 describe("requesting a receive quote", () => {
+  it("requests a signet quote as signet", async () => {
+    const { wallet, quoteCalls } = walletWithSigner();
+    (
+      wallet as unknown as { config: { getNetwork: () => WalletNetwork } }
+    ).config.getNetwork = () => WalletNetwork.SIGNET;
+
+    await wallet.getLightningReceiveQuote({ amountSats: 100_000 });
+
+    expect(quoteCalls[0]).toMatchObject({ network: "SIGNET" });
+  });
+
   it("stamps the requested amount and basis onto the quote", async () => {
     const { wallet } = walletWithSigner();
 

@@ -176,6 +176,7 @@ import {
 import { formatUrlForLogs } from "../utils/logging.js";
 import {
   getNetwork,
+  isLightningInvoiceNetworkCompatible,
   Network,
   NetworkToProto,
   type NetworkType,
@@ -3483,6 +3484,70 @@ export abstract class SparkWallet extends EventEmitter<SparkWalletEvents> {
   }
 
   /**
+   * Sends the counter leg of a Swap V3 operation and settles both legs.
+   * Service providers use this after they validate the primary transfer.
+   */
+  public async transferSwapCounter({
+    receiverSparkAddress,
+    targetAmountsSats,
+    primaryTransferId,
+    adaptorPublicKey,
+    counterTransferId,
+  }: {
+    receiverSparkAddress: SparkAddressFormat;
+    targetAmountsSats: number[];
+    primaryTransferId: string;
+    adaptorPublicKey: Uint8Array;
+    counterTransferId?: string;
+  }): Promise<WalletTransfer> {
+    if (targetAmountsSats.length === 0) {
+      throw new SparkValidationError("targetAmountsSats must not be empty");
+    }
+    if (
+      targetAmountsSats.some(
+        (amount) => !Number.isSafeInteger(amount) || amount <= 0,
+      )
+    ) {
+      throw new SparkValidationError(
+        "Target amounts must be positive safe integers",
+      );
+    }
+
+    const receiverAddress = decodeSparkAddress(
+      receiverSparkAddress,
+      this.config.getNetworkType(),
+    );
+    if (receiverAddress.sparkInvoiceFields) {
+      throw new SparkValidationError(
+        "Counter transfer receiver must be a plain Spark address",
+      );
+    }
+    const receiverIdentityPublicKey = hexToBytes(
+      receiverAddress.identityPublicKey,
+    );
+
+    return await this.leafManager.selectLeavesAndExecute(
+      targetAmountsSats,
+      async (selected) => {
+        const leafKeyTweaks = Object.values(selected)
+          .flat()
+          .map((leaf) => this.toSendTweak(leaf, receiverIdentityPublicKey));
+        const transfer = await this.transferService.sendCounterSwapTransfer(
+          leafKeyTweaks,
+          primaryTransferId,
+          adaptorPublicKey,
+          counterTransferId,
+        );
+        await this.leafManager.handleTransferEvent(transfer);
+        return mapTransferToWalletTransfer(
+          transfer,
+          bytesToHex(await this.config.signer.getIdentityPublicKey()),
+        );
+      },
+    );
+  }
+
+  /**
    * Transfers with optional invoices.
    * Does not parse/validate invoices or enforce amount-vs-invoice.
    * If an invoice is provided, the caller must pass in the correct:
@@ -3975,9 +4040,17 @@ export abstract class SparkWallet extends EventEmitter<SparkWalletEvents> {
   }
 
   private toBitcoinNetwork(): BitcoinNetwork {
-    return this.config.getNetwork() === Network.MAINNET
-      ? BitcoinNetwork.MAINNET
-      : BitcoinNetwork.REGTEST;
+    switch (this.config.getNetwork()) {
+      case Network.MAINNET:
+        return BitcoinNetwork.MAINNET;
+      case Network.TESTNET:
+        return BitcoinNetwork.TESTNET;
+      case Network.SIGNET:
+        return BitcoinNetwork.SIGNET;
+      case Network.REGTEST:
+      case Network.LOCAL:
+        return BitcoinNetwork.REGTEST;
+    }
   }
 
   /**
@@ -4045,15 +4118,7 @@ export abstract class SparkWallet extends EventEmitter<SparkWalletEvents> {
       );
     }
 
-    // From the same mapping the request used, not the wallet's network: that
-    // mapping collapses every non-mainnet network onto regtest, so comparing
-    // against the wallet's own value refuses the quote it just asked for.
-    const quotedNetwork =
-      NetworkToProto[
-        this.toBitcoinNetwork() === BitcoinNetwork.MAINNET
-          ? Network.MAINNET
-          : Network.REGTEST
-      ];
+    const quotedNetwork = NetworkToProto[this.config.getNetwork()];
     if (manifest.network !== quotedNetwork) {
       throw new SparkValidationError(
         "Quote was issued for a different network than this wallet",
@@ -4634,12 +4699,7 @@ export abstract class SparkWallet extends EventEmitter<SparkWalletEvents> {
     const invoiceNetwork = getNetworkFromInvoice(invoice);
     const walletNetwork = this.config.getNetwork();
 
-    const isValidNetworkForWallet =
-      invoiceNetwork === walletNetwork ||
-      (invoiceNetwork === Network.REGTEST &&
-        (walletNetwork === Network.REGTEST || walletNetwork === Network.LOCAL));
-
-    if (!isValidNetworkForWallet) {
+    if (!isLightningInvoiceNetworkCompatible(invoiceNetwork, walletNetwork)) {
       throw new SparkValidationError(
         `Invoice network: ${invoiceNetwork} does not match wallet network: ${walletNetwork}`,
         {
@@ -7175,6 +7235,7 @@ const PUBLIC_SPARK_WALLET_METHODS = [
   "startAllowancePull",
   "experimental_syncWallet",
   "transfer",
+  "transferSwapCounter",
   "transferV2",
   "transferTokens",
   "registerSparkWalletWebhook",

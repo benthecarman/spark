@@ -465,6 +465,59 @@ export class BaseTransferService {
     }
   }
 
+  async sendCounterSwapTransfer(
+    leaves: LeafKeyTweak[],
+    primaryTransferId: string,
+    adaptorPubkey: Uint8Array,
+    transferId?: string,
+  ): Promise<Transfer> {
+    if (leaves.length === 0) {
+      throw new SparkValidationError("leaves must not be empty");
+    }
+
+    const transferID = transferId ?? uuidv7();
+    const keyTweakInputMap = await this.prepareSendTransferKeyTweaks(
+      transferID,
+      leaves,
+    );
+    const transferPackage = await this.prepareTransferPackage(
+      transferID,
+      keyTweakInputMap,
+      leaves,
+      adaptorPubkey,
+    );
+    transferPackage.directFromCpfpLeavesToSend = [];
+    transferPackage.directLeavesToSend = [];
+
+    const sparkClient = await this.connectionManager.createSparkClient(
+      this.config.getCoordinatorAddress(),
+    );
+    try {
+      const response = await sparkClient.initiate_swap_counter_transfer({
+        transfer: {
+          transferId: transferID,
+          ownerIdentityPublicKey:
+            await this.config.signer.getIdentityPublicKey(),
+          receiverIdentityPublicKey: leaves[0]!.receiverIdentityPublicKey,
+          transferPackage,
+        },
+        adaptorPublicKeys: { adaptorPublicKey: adaptorPubkey },
+        primaryTransferId,
+      });
+      if (!response.transfer) {
+        throw new SparkValidationError(
+          "No counter transfer response from operator",
+        );
+      }
+      return response.transfer;
+    } catch (error) {
+      throw new SparkRequestError("Failed to initiate swap counter transfer", {
+        method: "POST",
+        error: error as Error,
+      });
+    }
+  }
+
   private async prepareTransferPackage(
     transferID: string,
     keyTweakInputMap: Map<string, SendLeafKeyTweak[]>,
