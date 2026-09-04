@@ -866,14 +866,14 @@ func (h *TreeCreationHandler) prepareSigningJobs(ctx context.Context, req *pb.Cr
 		var directRefundTx []byte
 		if currentElement.node.GetDirectRefundTxSigningJob() != nil {
 			directRefundTx = currentElement.node.GetDirectRefundTxSigningJob().GetRawTx()
-		} else if requireDirectTx {
+		} else if requireDirectTx && currentElement.node.GetRefundTxSigningJob() != nil {
 			return nil, nil, errors.New("directRefundTxSigningJob is required. Please upgrade to the latest SDK version")
 		}
 
 		var directFromCpfpRefundTx []byte
 		if currentElement.node.GetDirectFromCpfpRefundTxSigningJob() != nil {
 			directFromCpfpRefundTx = currentElement.node.GetDirectFromCpfpRefundTxSigningJob().GetRawTx()
-		} else if requireDirectTx {
+		} else if requireDirectTx && currentElement.node.GetRefundTxSigningJob() != nil {
 			return nil, nil, errors.New("directFromCpfpRefundTxSigningJob is required. Please upgrade to the latest SDK version")
 		}
 

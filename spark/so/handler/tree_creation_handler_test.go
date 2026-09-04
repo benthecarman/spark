@@ -2043,6 +2043,88 @@ func TestPrepareSigningJobsAllowsSplitWithTrailingAnchorAndFeeAdjustedDirectTx(t
 	require.Len(t, nodes, 3)
 }
 
+func createTreeCreationDirectLeaf(
+	t *testing.T,
+	rng io.Reader,
+	parentOutPoint wire.OutPoint,
+	output *wire.TxOut,
+	ownerSigningPubKey keys.Public,
+) *pb.CreationNode {
+	t.Helper()
+
+	nodeTx, nodeRawTx := createTreeCreationRefundValidationTx(t, parentOutPoint, wire.MaxTxInSequenceNum, output)
+	directOutput := feeAdjustedTreeCreationSplitOutput(output)
+	directNodeTx, directNodeRawTx := createTreeCreationRefundValidationTx(t, parentOutPoint, wire.MaxTxInSequenceNum, directOutput)
+
+	_, refundRawTx := createTreeCreationRefundValidationTx(
+		t,
+		wire.OutPoint{Hash: nodeTx.TxHash(), Index: 0},
+		spark.InitialSequence(),
+		createTreeCreationRefundValidationOutput(t, ownerSigningPubKey, output.Value),
+		common.EphemeralAnchorOutput(),
+	)
+	_, directRefundRawTx := createTreeCreationRefundValidationTx(
+		t,
+		wire.OutPoint{Hash: directNodeTx.TxHash(), Index: 0},
+		spark.InitialSequence()+spark.DirectTimelockOffset,
+		createTreeCreationRefundValidationOutput(t, ownerSigningPubKey, common.MaybeApplyFee(directOutput.Value)),
+	)
+	_, directFromCpfpRefundRawTx := createTreeCreationRefundValidationTx(
+		t,
+		wire.OutPoint{Hash: nodeTx.TxHash(), Index: 0},
+		spark.InitialSequence()+spark.DirectTimelockOffset,
+		createTreeCreationRefundValidationOutput(t, ownerSigningPubKey, common.MaybeApplyFee(output.Value)),
+	)
+
+	return &pb.CreationNode{
+		NodeTxSigningJob:                 createTreeCreationRefundValidationSigningJob(t, rng, nodeRawTx, ownerSigningPubKey),
+		DirectNodeTxSigningJob:           createTreeCreationRefundValidationSigningJob(t, rng, directNodeRawTx, ownerSigningPubKey),
+		RefundTxSigningJob:               createTreeCreationRefundValidationSigningJob(t, rng, refundRawTx, ownerSigningPubKey),
+		DirectRefundTxSigningJob:         createTreeCreationRefundValidationSigningJob(t, rng, directRefundRawTx, ownerSigningPubKey),
+		DirectFromCpfpRefundTxSigningJob: createTreeCreationRefundValidationSigningJob(t, rng, directFromCpfpRefundRawTx, ownerSigningPubKey),
+	}
+}
+
+func TestPrepareSigningJobsV2AllowsInternalSplitNodeWithoutRefundJobs(t *testing.T) {
+	rng := rand.NewChaCha8([32]byte{93})
+	ctx, _ := db.ConnectToTestPostgres(t)
+	dbTX, err := ent.GetDbFromContext(ctx)
+	require.NoError(t, err)
+
+	fixture := setUpTreeCreationPreparedSplit(t, ctx, dbTX, rng, 0x93)
+	parentTxid := fixture.parentTx.TxHash()
+	splitTx, splitRawTx := createTreeCreationSplitTx(
+		t,
+		wire.OutPoint{Hash: parentTxid, Index: 0},
+		fixture.leftOutput,
+		fixture.rightOutput,
+		common.EphemeralAnchorOutput(),
+	)
+	_, directSplitRawTx := createTreeCreationSplitTx(
+		t,
+		wire.OutPoint{Hash: parentTxid, Index: 0},
+		feeAdjustedTreeCreationSplitOutput(fixture.leftOutput),
+		feeAdjustedTreeCreationSplitOutput(fixture.rightOutput),
+	)
+
+	splitTxid := splitTx.TxHash()
+	children := []*pb.CreationNode{
+		createTreeCreationDirectLeaf(t, rng, wire.OutPoint{Hash: splitTxid, Index: 0}, fixture.leftOutput, fixture.leftUserPubkey),
+		createTreeCreationDirectLeaf(t, rng, wire.OutPoint{Hash: splitTxid, Index: 1}, fixture.rightOutput, fixture.rightUserPubkey),
+	}
+
+	handler := createTestHandler()
+	signingJobs, nodes, err := handler.prepareSigningJobs(
+		ctx,
+		fixture.createTreeRequest(rng, splitRawTx, directSplitRawTx, children),
+		true,
+	)
+
+	require.NoError(t, err)
+	require.Len(t, signingJobs, 12)
+	require.Len(t, nodes, 3)
+}
+
 func TestPrepareSigningJobsRejectsSplitWithFakeAnchorOutput(t *testing.T) {
 	anchor := common.EphemeralAnchorOutput()
 	tests := []struct {
