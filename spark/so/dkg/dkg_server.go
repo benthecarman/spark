@@ -19,6 +19,8 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+const maxDkgKeyCount = 5000
+
 // Server is the grpc server for the DKG protocol.
 // It is only used by the signing operators.
 type Server struct {
@@ -38,7 +40,11 @@ func NewServer(frostConnection *grpc.ClientConn, config *so.Config) *Server {
 }
 
 func (s *Server) StartDkg(ctx context.Context, req *pbdkg.StartDkgRequest) (*emptypb.Empty, error) {
-	if err := GenerateKeys(ctx, s.config, uint64(req.GetCount())); err != nil {
+	count := req.GetCount()
+	if count <= 0 || count > maxDkgKeyCount {
+		return nil, errors.InvalidArgumentOutOfRange(fmt.Errorf("DKG key count must be between 1 and %d, got %d", maxDkgKeyCount, count))
+	}
+	if err := GenerateKeys(ctx, s.config, uint64(count)); err != nil {
 		return nil, err
 	}
 	return &emptypb.Empty{}, nil
