@@ -201,6 +201,20 @@ func (s *AuthnServer) VerifyChallenge(ctx context.Context, req *pb.VerifyChallen
 
 	challenge := req.GetProtectedChallenge().GetChallenge()
 
+	if len(challenge.GetNonce()) != sha256.Size {
+		return nil, sparkerrors.InvalidArgumentMalformedField(fmt.Errorf("invalid challenge nonce length: got %d, want %d", len(challenge.GetNonce()), sha256.Size))
+	}
+
+	if len(req.GetProtectedChallenge().GetServerHmac()) != sha256.Size {
+		return nil, sparkerrors.InvalidArgumentMalformedField(fmt.Errorf("invalid challenge hmac length: got %d, want %d", len(req.GetProtectedChallenge().GetServerHmac()), sha256.Size))
+	}
+
+	// Authenticate the server-issued challenge before recording caller-controlled
+	// data in the replay cache.
+	if err := s.verifyChallengeHmac(challenge, req.GetProtectedChallenge().GetServerHmac()); err != nil {
+		return nil, fmt.Errorf("challenge verification failed: %w", err)
+	}
+
 	if err := s.validateChallenge(ctx, challenge, req); err != nil {
 		return nil, fmt.Errorf("challenge validation failed: %w", err)
 	}
@@ -208,10 +222,6 @@ func (s *AuthnServer) VerifyChallenge(ctx context.Context, req *pb.VerifyChallen
 	challengeBytes, err := proto.Marshal(challenge)
 	if err != nil {
 		return nil, fmt.Errorf("internal error: failed to serialize challenge: %w", err)
-	}
-
-	if err := s.verifyChallengeHmac(challenge, req.GetProtectedChallenge().GetServerHmac()); err != nil {
-		return nil, fmt.Errorf("challenge verification failed: %w", err)
 	}
 
 	if err := s.verifyClientSignature(challengeBytes, pubKey, req.GetSignature()); err != nil {

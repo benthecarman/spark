@@ -194,6 +194,23 @@ func testVerifyChallenge_InvalidSignature(t *testing.T, sigAlg signingAlgorithm)
 	assert.Nil(t, resp)
 }
 
+func TestVerifyChallenge_InvalidHmacDoesNotCacheNonce(t *testing.T) {
+	server, _ := newTestServerAndTokenVerifier(t)
+	privKey := keys.MustGeneratePrivateKeyFromRand(seededRand)
+	challengeResp, signature := createSignedChallengeECDSA(t, server, privKey)
+	challengeResp.ProtectedChallenge.ServerHmac = make([]byte, sha256.Size)
+
+	resp, err := server.VerifyChallenge(t.Context(), &pb.VerifyChallengeRequest{
+		ProtectedChallenge: challengeResp.GetProtectedChallenge(),
+		Signature:          signature,
+		PublicKey:          privKey.Public().Serialize(),
+	})
+
+	require.ErrorIs(t, err, ErrInvalidChallengeHmac)
+	assert.Nil(t, resp)
+	assert.Zero(t, server.nonceCache.cache.ItemCount())
+}
+
 func TestVerifyChallenge_ExpiredSessionToken_ReturnsError(t *testing.T) {
 	clock := authninternal.NewTestClock(time.Now())
 	server, tokenVerifier := newTestServerAndTokenVerifier(t, withClock(clock))
