@@ -7,6 +7,26 @@ option go_package = "github.com/lightsparkdev/spark/proto/spark_ssp_internal";
 import "spark.proto";
 
 service SparkSspInternalService {
+    rpc query_static_deposit_addresses(spark.QueryStaticDepositAddressesRequest) returns (spark.QueryStaticDepositAddressesResponse) {}
+    rpc initiate_static_deposit_swap(StaticDepositSwapRequest) returns (StaticDepositSwapResponse) {}
+    rpc query_nodes(spark.QueryNodesRequest) returns (spark.QueryNodesResponse) {}
     rpc prepare_tree_address(spark.PrepareTreeAddressRequest) returns (spark.PrepareTreeAddressResponse) {}
     rpc create_tree(spark.CreateTreeRequest) returns (spark.CreateTreeResponse) {}
+}
+
+// Confirmed fixed-amount deposits. The operator commits the transfer and UTXO
+// claim together; the SSP aggregates its deposit-key share after this reply.
+message StaticDepositSwapRequest {
+    spark.UTXO on_chain_utxo = 1;
+    bytes ssp_signature = 2;
+    bytes user_signature = 3;
+    spark.StartTransferRequest transfer = 4;
+    spark.SigningJob spend_tx_signing_job = 5;
+    spark.HashVariant hash_variant = 6;
+    optional uint32 confirmation_threshold = 7;
+}
+message StaticDepositSwapResponse {
+    spark.Transfer transfer = 1;
+    spark.SigningResult spend_tx_signing_result = 2;
+    spark.DepositAddressQueryResult deposit_address = 3;
 }
