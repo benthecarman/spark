@@ -408,6 +408,22 @@ func TestValidateUtxoSwapRefundTxsExact(t *testing.T) {
 		},
 	}
 
+	t.Run("root-without-direct-parent", func(t *testing.T) {
+		directParent := leaf.DirectTx
+		leaf.DirectTx = nil
+		defer func() { leaf.DirectTx = directParent }()
+		set := utxoSwapRefundSet{cpfp: canonical.cpfp, directFromCpfp: canonical.directFromCpfp}
+		for _, validator := range validators {
+			require.NoError(t, validator.validate(set))
+			bad := set
+			bad.directFromCpfp = []byte{1}
+			require.Error(t, validator.validate(bad), "supplied root refund must still be validated")
+			bad = set
+			bad.direct = canonical.direct
+			require.ErrorContains(t, validator.validate(bad), "without a direct parent")
+		}
+	})
+
 	for _, validator := range validators {
 		t.Run(validator.name, func(t *testing.T) {
 			require.NoError(t, validator.validate(canonical), "canonical SDK-shaped refund set must pass")

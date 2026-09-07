@@ -993,7 +993,9 @@ func (h *BaseTransferHandler) validateUtxoSwapLeaves(
 // validateUtxoSwapLeafRefundTxsV3 is shared by the legacy and consensus/V3
 // UTXO-swap creation paths. CPFP refunds are required. Direct and
 // direct-from-CPFP refunds are optional when requireDirectTx is false, but they
-// must be supplied as a pair and every supplied transaction is reconstructed
+// must be supplied as a pair when the leaf has a direct parent. A root or
+// split child without a direct parent can supply only direct-from-CPFP.
+// Every supplied transaction is reconstructed
 // and compared in full before FROST signing.
 //
 // LeafAvailableToTransfer is deliberately outside this helper: the legacy
@@ -1019,8 +1021,11 @@ func validateUtxoSwapLeafRefundTxsV3(
 		directFromCpfpRefundTx := leafDirectFromCpfpRefundMap[leafID]
 		hasDirectRefundTx := len(directRefundTx) > 0
 		hasDirectFromCpfpRefundTx := len(directFromCpfpRefundTx) > 0
-		if hasDirectRefundTx != hasDirectFromCpfpRefundTx {
+		if len(leaf.DirectTx) > 0 && hasDirectRefundTx != hasDirectFromCpfpRefundTx {
 			return fmt.Errorf("both direct refund txs are required when either direct refund tx is provided for utxo swap leaf %s", leafID)
+		}
+		if len(leaf.DirectTx) == 0 && hasDirectRefundTx {
+			return fmt.Errorf("direct refund supplied for leaf %s without a direct parent", leafID)
 		}
 		if requireDirectTx && len(leaf.DirectTx) > 0 && !hasDirectRefundTx {
 			return fmt.Errorf("DirectNodeTxSignature is required for utxo swap leaf %s. Please upgrade to the latest SDK version", leafID)
@@ -1055,6 +1060,8 @@ func validateUtxoSwapLeafRefundTxsV3(
 			); err != nil {
 				return fmt.Errorf("unable to validate direct refund tx for utxo swap leaf %s: %w", leafID, err)
 			}
+		}
+		if hasDirectFromCpfpRefundTx {
 			if err := bitcointransaction.VerifyTransactionWithDatabaseTimelock(
 				ctx,
 				directFromCpfpRefundTx,
