@@ -97,6 +97,7 @@ type args struct {
 	DatabasePath               string
 	EphemeralDatabasePath      string
 	RunningLocally             bool
+	DisableMockServer          bool
 	ChallengeTimeout           time.Duration
 	SessionDuration            time.Duration
 	AuthzEnforced              bool
@@ -162,6 +163,7 @@ func loadArgs() (*args, error) {
 	flag.StringVar(&args.DatabasePath, "database", "", "Path to database file")
 	flag.StringVar(&args.EphemeralDatabasePath, "ephemeral-database", "", "Path to ephemeral database file")
 	flag.BoolVar(&args.RunningLocally, "local", false, "Running locally")
+	flag.BoolVar(&args.DisableMockServer, "disable-mock-server", false, "Do not register the local-only MockService, even when running locally. Set this on any operator whose public listener is reachable by untrusted clients.")
 	flag.DurationVar(&args.ChallengeTimeout, "challenge-timeout", time.Minute, "Challenge timeout")
 	flag.DurationVar(&args.SessionDuration, "session-duration", time.Minute*15, "Session duration")
 	flag.BoolVar(&args.AuthzEnforced, "authz-enforced", true, "Enforce authorization checks")

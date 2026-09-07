@@ -40,7 +40,10 @@ func RegisterPublicGrpcServers(
 	eventsRouter *events.EventRouter,
 	rwClient *partner.RisingWaveClient,
 ) error {
-	if args.RunningLocally {
+	// MockService has anonymous methods that mutate operator state. It is only
+	// registered for local test runs, and -disable-mock-server suppresses it on
+	// deployments that need -local for other reasons (for example static knobs).
+	if args.RunningLocally && !args.DisableMockServer {
 		mockServer := sparkgrpc.NewMockServer(config, dbClient, ephemeralDBClient)
 		pbmock.RegisterMockServiceServer(grpcServer, mockServer)
 	}
