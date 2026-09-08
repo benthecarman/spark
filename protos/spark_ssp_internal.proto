@@ -9,6 +9,8 @@ import "spark.proto";
 service SparkSspInternalService {
     rpc query_static_deposit_addresses(spark.QueryStaticDepositAddressesRequest) returns (spark.QueryStaticDepositAddressesResponse) {}
     rpc initiate_static_deposit_swap(StaticDepositSwapRequest) returns (StaticDepositSwapResponse) {}
+    rpc reserve_instant_deposit(ReserveInstantDepositRequest) returns (ReserveInstantDepositResponse) {}
+    rpc recover_instant_deposit(RecoverInstantDepositRequest) returns (StaticDepositSwapResponse) {}
     rpc query_nodes(spark.QueryNodesRequest) returns (spark.QueryNodesResponse) {}
     rpc prepare_tree_address(spark.PrepareTreeAddressRequest) returns (spark.PrepareTreeAddressResponse) {}
     rpc create_tree(spark.CreateTreeRequest) returns (spark.CreateTreeResponse) {}
@@ -29,4 +31,28 @@ message StaticDepositSwapResponse {
     spark.Transfer transfer = 1;
     spark.SigningResult spend_tx_signing_result = 2;
     spark.DepositAddressQueryResult deposit_address = 3;
+}
+
+// Advance the entire credit now. Secondary credits are not part of this API.
+message ReserveInstantDepositRequest {
+    spark.UTXO on_chain_utxo = 1;
+    bytes ssp_signature = 2;
+    bytes user_signature = 3;
+    spark.StartTransferRequest transfer = 4;
+    string destination_address = 5;
+    int64 value_sats = 6;
+    int64 credit_amount_sats = 7;
+}
+message ReserveInstantDepositResponse {
+    spark.Transfer transfer = 1;
+}
+message RecoverInstantDepositRequest {
+    spark.UTXO on_chain_utxo = 1;
+    spark.SigningJob spend_tx_signing_job = 2;
+    string transfer_id = 3;
+}
+// Coordinator checkpoint. A retry must use the same transaction and nonce.
+message InstantRecoveryCheckpoint {
+    RecoverInstantDepositRequest request = 1;
+    spark.SigningResult signing_result = 2;
 }

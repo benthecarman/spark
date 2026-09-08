@@ -176,6 +176,256 @@ func (x *StaticDepositSwapResponse) GetDepositAddress() *spark.DepositAddressQue
 	return nil
 }
 
+// Advance the entire credit now. Secondary credits are not part of this API.
+type ReserveInstantDepositRequest struct {
+	state              protoimpl.MessageState      `protogen:"open.v1"`
+	OnChainUtxo        *spark.UTXO                 `protobuf:"bytes,1,opt,name=on_chain_utxo,json=onChainUtxo,proto3" json:"on_chain_utxo,omitempty"`
+	SspSignature       []byte                      `protobuf:"bytes,2,opt,name=ssp_signature,json=sspSignature,proto3" json:"ssp_signature,omitempty"`
+	UserSignature      []byte                      `protobuf:"bytes,3,opt,name=user_signature,json=userSignature,proto3" json:"user_signature,omitempty"`
+	Transfer           *spark.StartTransferRequest `protobuf:"bytes,4,opt,name=transfer,proto3" json:"transfer,omitempty"`
+	DestinationAddress string                      `protobuf:"bytes,5,opt,name=destination_address,json=destinationAddress,proto3" json:"destination_address,omitempty"`
+	ValueSats          int64                       `protobuf:"varint,6,opt,name=value_sats,json=valueSats,proto3" json:"value_sats,omitempty"`
+	CreditAmountSats   int64                       `protobuf:"varint,7,opt,name=credit_amount_sats,json=creditAmountSats,proto3" json:"credit_amount_sats,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *ReserveInstantDepositRequest) Reset() {
+	*x = ReserveInstantDepositRequest{}
+	mi := &file_spark_ssp_internal_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReserveInstantDepositRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReserveInstantDepositRequest) ProtoMessage() {}
+
+func (x *ReserveInstantDepositRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_spark_ssp_internal_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReserveInstantDepositRequest.ProtoReflect.Descriptor instead.
+func (*ReserveInstantDepositRequest) Descriptor() ([]byte, []int) {
+	return file_spark_ssp_internal_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ReserveInstantDepositRequest) GetOnChainUtxo() *spark.UTXO {
+	if x != nil {
+		return x.OnChainUtxo
+	}
+	return nil
+}
+
+func (x *ReserveInstantDepositRequest) GetSspSignature() []byte {
+	if x != nil {
+		return x.SspSignature
+	}
+	return nil
+}
+
+func (x *ReserveInstantDepositRequest) GetUserSignature() []byte {
+	if x != nil {
+		return x.UserSignature
+	}
+	return nil
+}
+
+func (x *ReserveInstantDepositRequest) GetTransfer() *spark.StartTransferRequest {
+	if x != nil {
+		return x.Transfer
+	}
+	return nil
+}
+
+func (x *ReserveInstantDepositRequest) GetDestinationAddress() string {
+	if x != nil {
+		return x.DestinationAddress
+	}
+	return ""
+}
+
+func (x *ReserveInstantDepositRequest) GetValueSats() int64 {
+	if x != nil {
+		return x.ValueSats
+	}
+	return 0
+}
+
+func (x *ReserveInstantDepositRequest) GetCreditAmountSats() int64 {
+	if x != nil {
+		return x.CreditAmountSats
+	}
+	return 0
+}
+
+type ReserveInstantDepositResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Transfer      *spark.Transfer        `protobuf:"bytes,1,opt,name=transfer,proto3" json:"transfer,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReserveInstantDepositResponse) Reset() {
+	*x = ReserveInstantDepositResponse{}
+	mi := &file_spark_ssp_internal_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReserveInstantDepositResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReserveInstantDepositResponse) ProtoMessage() {}
+
+func (x *ReserveInstantDepositResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_spark_ssp_internal_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReserveInstantDepositResponse.ProtoReflect.Descriptor instead.
+func (*ReserveInstantDepositResponse) Descriptor() ([]byte, []int) {
+	return file_spark_ssp_internal_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ReserveInstantDepositResponse) GetTransfer() *spark.Transfer {
+	if x != nil {
+		return x.Transfer
+	}
+	return nil
+}
+
+type RecoverInstantDepositRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	OnChainUtxo       *spark.UTXO            `protobuf:"bytes,1,opt,name=on_chain_utxo,json=onChainUtxo,proto3" json:"on_chain_utxo,omitempty"`
+	SpendTxSigningJob *spark.SigningJob      `protobuf:"bytes,2,opt,name=spend_tx_signing_job,json=spendTxSigningJob,proto3" json:"spend_tx_signing_job,omitempty"`
+	TransferId        string                 `protobuf:"bytes,3,opt,name=transfer_id,json=transferId,proto3" json:"transfer_id,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *RecoverInstantDepositRequest) Reset() {
+	*x = RecoverInstantDepositRequest{}
+	mi := &file_spark_ssp_internal_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecoverInstantDepositRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecoverInstantDepositRequest) ProtoMessage() {}
+
+func (x *RecoverInstantDepositRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_spark_ssp_internal_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecoverInstantDepositRequest.ProtoReflect.Descriptor instead.
+func (*RecoverInstantDepositRequest) Descriptor() ([]byte, []int) {
+	return file_spark_ssp_internal_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *RecoverInstantDepositRequest) GetOnChainUtxo() *spark.UTXO {
+	if x != nil {
+		return x.OnChainUtxo
+	}
+	return nil
+}
+
+func (x *RecoverInstantDepositRequest) GetSpendTxSigningJob() *spark.SigningJob {
+	if x != nil {
+		return x.SpendTxSigningJob
+	}
+	return nil
+}
+
+func (x *RecoverInstantDepositRequest) GetTransferId() string {
+	if x != nil {
+		return x.TransferId
+	}
+	return ""
+}
+
+// Coordinator checkpoint. A retry must use the same transaction and nonce.
+type InstantRecoveryCheckpoint struct {
+	state         protoimpl.MessageState        `protogen:"open.v1"`
+	Request       *RecoverInstantDepositRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	SigningResult *spark.SigningResult          `protobuf:"bytes,2,opt,name=signing_result,json=signingResult,proto3" json:"signing_result,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InstantRecoveryCheckpoint) Reset() {
+	*x = InstantRecoveryCheckpoint{}
+	mi := &file_spark_ssp_internal_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InstantRecoveryCheckpoint) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InstantRecoveryCheckpoint) ProtoMessage() {}
+
+func (x *InstantRecoveryCheckpoint) ProtoReflect() protoreflect.Message {
+	mi := &file_spark_ssp_internal_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InstantRecoveryCheckpoint.ProtoReflect.Descriptor instead.
+func (*InstantRecoveryCheckpoint) Descriptor() ([]byte, []int) {
+	return file_spark_ssp_internal_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *InstantRecoveryCheckpoint) GetRequest() *RecoverInstantDepositRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *InstantRecoveryCheckpoint) GetSigningResult() *spark.SigningResult {
+	if x != nil {
+		return x.SigningResult
+	}
+	return nil
+}
+
 var File_spark_ssp_internal_proto protoreflect.FileDescriptor
 
 const file_spark_ssp_internal_proto_rawDesc = "" +
@@ -193,10 +443,31 @@ const file_spark_ssp_internal_proto_rawDesc = "" +
 	"\x19StaticDepositSwapResponse\x12+\n" +
 	"\btransfer\x18\x01 \x01(\v2\x0f.spark.TransferR\btransfer\x12K\n" +
 	"\x17spend_tx_signing_result\x18\x02 \x01(\v2\x14.spark.SigningResultR\x14spendTxSigningResult\x12I\n" +
-	"\x0fdeposit_address\x18\x03 \x01(\v2 .spark.DepositAddressQueryResultR\x0edepositAddress2\xfe\x03\n" +
+	"\x0fdeposit_address\x18\x03 \x01(\v2 .spark.DepositAddressQueryResultR\x0edepositAddress\"\xd2\x02\n" +
+	"\x1cReserveInstantDepositRequest\x12/\n" +
+	"\ron_chain_utxo\x18\x01 \x01(\v2\v.spark.UTXOR\vonChainUtxo\x12#\n" +
+	"\rssp_signature\x18\x02 \x01(\fR\fsspSignature\x12%\n" +
+	"\x0euser_signature\x18\x03 \x01(\fR\ruserSignature\x127\n" +
+	"\btransfer\x18\x04 \x01(\v2\x1b.spark.StartTransferRequestR\btransfer\x12/\n" +
+	"\x13destination_address\x18\x05 \x01(\tR\x12destinationAddress\x12\x1d\n" +
+	"\n" +
+	"value_sats\x18\x06 \x01(\x03R\tvalueSats\x12,\n" +
+	"\x12credit_amount_sats\x18\a \x01(\x03R\x10creditAmountSats\"L\n" +
+	"\x1dReserveInstantDepositResponse\x12+\n" +
+	"\btransfer\x18\x01 \x01(\v2\x0f.spark.TransferR\btransfer\"\xb4\x01\n" +
+	"\x1cRecoverInstantDepositRequest\x12/\n" +
+	"\ron_chain_utxo\x18\x01 \x01(\v2\v.spark.UTXOR\vonChainUtxo\x12B\n" +
+	"\x14spend_tx_signing_job\x18\x02 \x01(\v2\x11.spark.SigningJobR\x11spendTxSigningJob\x12\x1f\n" +
+	"\vtransfer_id\x18\x03 \x01(\tR\n" +
+	"transferId\"\xa4\x01\n" +
+	"\x19InstantRecoveryCheckpoint\x12J\n" +
+	"\arequest\x18\x01 \x01(\v20.spark_ssp_internal.RecoverInstantDepositRequestR\arequest\x12;\n" +
+	"\x0esigning_result\x18\x02 \x01(\v2\x14.spark.SigningResultR\rsigningResult2\xff\x05\n" +
 	"\x17SparkSspInternalService\x12y\n" +
 	"\x1equery_static_deposit_addresses\x12).spark.QueryStaticDepositAddressesRequest\x1a*.spark.QueryStaticDepositAddressesResponse\"\x00\x12}\n" +
-	"\x1cinitiate_static_deposit_swap\x12,.spark_ssp_internal.StaticDepositSwapRequest\x1a-.spark_ssp_internal.StaticDepositSwapResponse\"\x00\x12D\n" +
+	"\x1cinitiate_static_deposit_swap\x12,.spark_ssp_internal.StaticDepositSwapRequest\x1a-.spark_ssp_internal.StaticDepositSwapResponse\"\x00\x12\x80\x01\n" +
+	"\x17reserve_instant_deposit\x120.spark_ssp_internal.ReserveInstantDepositRequest\x1a1.spark_ssp_internal.ReserveInstantDepositResponse\"\x00\x12|\n" +
+	"\x17recover_instant_deposit\x120.spark_ssp_internal.RecoverInstantDepositRequest\x1a-.spark_ssp_internal.StaticDepositSwapResponse\"\x00\x12D\n" +
 	"\vquery_nodes\x12\x18.spark.QueryNodesRequest\x1a\x19.spark.QueryNodesResponse\"\x00\x12]\n" +
 	"\x14prepare_tree_address\x12 .spark.PrepareTreeAddressRequest\x1a!.spark.PrepareTreeAddressResponse\"\x00\x12D\n" +
 	"\vcreate_tree\x12\x18.spark.CreateTreeRequest\x1a\x19.spark.CreateTreeResponse\"\x00B9Z7github.com/lightsparkdev/spark/proto/spark_ssp_internalb\x06proto3"
@@ -213,49 +484,64 @@ func file_spark_ssp_internal_proto_rawDescGZIP() []byte {
 	return file_spark_ssp_internal_proto_rawDescData
 }
 
-var file_spark_ssp_internal_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_spark_ssp_internal_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_spark_ssp_internal_proto_goTypes = []any{
 	(*StaticDepositSwapRequest)(nil),                  // 0: spark_ssp_internal.StaticDepositSwapRequest
 	(*StaticDepositSwapResponse)(nil),                 // 1: spark_ssp_internal.StaticDepositSwapResponse
-	(*spark.UTXO)(nil),                                // 2: spark.UTXO
-	(*spark.StartTransferRequest)(nil),                // 3: spark.StartTransferRequest
-	(*spark.SigningJob)(nil),                          // 4: spark.SigningJob
-	(spark.HashVariant)(0),                            // 5: spark.HashVariant
-	(*spark.Transfer)(nil),                            // 6: spark.Transfer
-	(*spark.SigningResult)(nil),                       // 7: spark.SigningResult
-	(*spark.DepositAddressQueryResult)(nil),           // 8: spark.DepositAddressQueryResult
-	(*spark.QueryStaticDepositAddressesRequest)(nil),  // 9: spark.QueryStaticDepositAddressesRequest
-	(*spark.QueryNodesRequest)(nil),                   // 10: spark.QueryNodesRequest
-	(*spark.PrepareTreeAddressRequest)(nil),           // 11: spark.PrepareTreeAddressRequest
-	(*spark.CreateTreeRequest)(nil),                   // 12: spark.CreateTreeRequest
-	(*spark.QueryStaticDepositAddressesResponse)(nil), // 13: spark.QueryStaticDepositAddressesResponse
-	(*spark.QueryNodesResponse)(nil),                  // 14: spark.QueryNodesResponse
-	(*spark.PrepareTreeAddressResponse)(nil),          // 15: spark.PrepareTreeAddressResponse
-	(*spark.CreateTreeResponse)(nil),                  // 16: spark.CreateTreeResponse
+	(*ReserveInstantDepositRequest)(nil),              // 2: spark_ssp_internal.ReserveInstantDepositRequest
+	(*ReserveInstantDepositResponse)(nil),             // 3: spark_ssp_internal.ReserveInstantDepositResponse
+	(*RecoverInstantDepositRequest)(nil),              // 4: spark_ssp_internal.RecoverInstantDepositRequest
+	(*InstantRecoveryCheckpoint)(nil),                 // 5: spark_ssp_internal.InstantRecoveryCheckpoint
+	(*spark.UTXO)(nil),                                // 6: spark.UTXO
+	(*spark.StartTransferRequest)(nil),                // 7: spark.StartTransferRequest
+	(*spark.SigningJob)(nil),                          // 8: spark.SigningJob
+	(spark.HashVariant)(0),                            // 9: spark.HashVariant
+	(*spark.Transfer)(nil),                            // 10: spark.Transfer
+	(*spark.SigningResult)(nil),                       // 11: spark.SigningResult
+	(*spark.DepositAddressQueryResult)(nil),           // 12: spark.DepositAddressQueryResult
+	(*spark.QueryStaticDepositAddressesRequest)(nil),  // 13: spark.QueryStaticDepositAddressesRequest
+	(*spark.QueryNodesRequest)(nil),                   // 14: spark.QueryNodesRequest
+	(*spark.PrepareTreeAddressRequest)(nil),           // 15: spark.PrepareTreeAddressRequest
+	(*spark.CreateTreeRequest)(nil),                   // 16: spark.CreateTreeRequest
+	(*spark.QueryStaticDepositAddressesResponse)(nil), // 17: spark.QueryStaticDepositAddressesResponse
+	(*spark.QueryNodesResponse)(nil),                  // 18: spark.QueryNodesResponse
+	(*spark.PrepareTreeAddressResponse)(nil),          // 19: spark.PrepareTreeAddressResponse
+	(*spark.CreateTreeResponse)(nil),                  // 20: spark.CreateTreeResponse
 }
 var file_spark_ssp_internal_proto_depIdxs = []int32{
-	2,  // 0: spark_ssp_internal.StaticDepositSwapRequest.on_chain_utxo:type_name -> spark.UTXO
-	3,  // 1: spark_ssp_internal.StaticDepositSwapRequest.transfer:type_name -> spark.StartTransferRequest
-	4,  // 2: spark_ssp_internal.StaticDepositSwapRequest.spend_tx_signing_job:type_name -> spark.SigningJob
-	5,  // 3: spark_ssp_internal.StaticDepositSwapRequest.hash_variant:type_name -> spark.HashVariant
-	6,  // 4: spark_ssp_internal.StaticDepositSwapResponse.transfer:type_name -> spark.Transfer
-	7,  // 5: spark_ssp_internal.StaticDepositSwapResponse.spend_tx_signing_result:type_name -> spark.SigningResult
-	8,  // 6: spark_ssp_internal.StaticDepositSwapResponse.deposit_address:type_name -> spark.DepositAddressQueryResult
-	9,  // 7: spark_ssp_internal.SparkSspInternalService.query_static_deposit_addresses:input_type -> spark.QueryStaticDepositAddressesRequest
-	0,  // 8: spark_ssp_internal.SparkSspInternalService.initiate_static_deposit_swap:input_type -> spark_ssp_internal.StaticDepositSwapRequest
-	10, // 9: spark_ssp_internal.SparkSspInternalService.query_nodes:input_type -> spark.QueryNodesRequest
-	11, // 10: spark_ssp_internal.SparkSspInternalService.prepare_tree_address:input_type -> spark.PrepareTreeAddressRequest
-	12, // 11: spark_ssp_internal.SparkSspInternalService.create_tree:input_type -> spark.CreateTreeRequest
-	13, // 12: spark_ssp_internal.SparkSspInternalService.query_static_deposit_addresses:output_type -> spark.QueryStaticDepositAddressesResponse
-	1,  // 13: spark_ssp_internal.SparkSspInternalService.initiate_static_deposit_swap:output_type -> spark_ssp_internal.StaticDepositSwapResponse
-	14, // 14: spark_ssp_internal.SparkSspInternalService.query_nodes:output_type -> spark.QueryNodesResponse
-	15, // 15: spark_ssp_internal.SparkSspInternalService.prepare_tree_address:output_type -> spark.PrepareTreeAddressResponse
-	16, // 16: spark_ssp_internal.SparkSspInternalService.create_tree:output_type -> spark.CreateTreeResponse
-	12, // [12:17] is the sub-list for method output_type
-	7,  // [7:12] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	6,  // 0: spark_ssp_internal.StaticDepositSwapRequest.on_chain_utxo:type_name -> spark.UTXO
+	7,  // 1: spark_ssp_internal.StaticDepositSwapRequest.transfer:type_name -> spark.StartTransferRequest
+	8,  // 2: spark_ssp_internal.StaticDepositSwapRequest.spend_tx_signing_job:type_name -> spark.SigningJob
+	9,  // 3: spark_ssp_internal.StaticDepositSwapRequest.hash_variant:type_name -> spark.HashVariant
+	10, // 4: spark_ssp_internal.StaticDepositSwapResponse.transfer:type_name -> spark.Transfer
+	11, // 5: spark_ssp_internal.StaticDepositSwapResponse.spend_tx_signing_result:type_name -> spark.SigningResult
+	12, // 6: spark_ssp_internal.StaticDepositSwapResponse.deposit_address:type_name -> spark.DepositAddressQueryResult
+	6,  // 7: spark_ssp_internal.ReserveInstantDepositRequest.on_chain_utxo:type_name -> spark.UTXO
+	7,  // 8: spark_ssp_internal.ReserveInstantDepositRequest.transfer:type_name -> spark.StartTransferRequest
+	10, // 9: spark_ssp_internal.ReserveInstantDepositResponse.transfer:type_name -> spark.Transfer
+	6,  // 10: spark_ssp_internal.RecoverInstantDepositRequest.on_chain_utxo:type_name -> spark.UTXO
+	8,  // 11: spark_ssp_internal.RecoverInstantDepositRequest.spend_tx_signing_job:type_name -> spark.SigningJob
+	4,  // 12: spark_ssp_internal.InstantRecoveryCheckpoint.request:type_name -> spark_ssp_internal.RecoverInstantDepositRequest
+	11, // 13: spark_ssp_internal.InstantRecoveryCheckpoint.signing_result:type_name -> spark.SigningResult
+	13, // 14: spark_ssp_internal.SparkSspInternalService.query_static_deposit_addresses:input_type -> spark.QueryStaticDepositAddressesRequest
+	0,  // 15: spark_ssp_internal.SparkSspInternalService.initiate_static_deposit_swap:input_type -> spark_ssp_internal.StaticDepositSwapRequest
+	2,  // 16: spark_ssp_internal.SparkSspInternalService.reserve_instant_deposit:input_type -> spark_ssp_internal.ReserveInstantDepositRequest
+	4,  // 17: spark_ssp_internal.SparkSspInternalService.recover_instant_deposit:input_type -> spark_ssp_internal.RecoverInstantDepositRequest
+	14, // 18: spark_ssp_internal.SparkSspInternalService.query_nodes:input_type -> spark.QueryNodesRequest
+	15, // 19: spark_ssp_internal.SparkSspInternalService.prepare_tree_address:input_type -> spark.PrepareTreeAddressRequest
+	16, // 20: spark_ssp_internal.SparkSspInternalService.create_tree:input_type -> spark.CreateTreeRequest
+	17, // 21: spark_ssp_internal.SparkSspInternalService.query_static_deposit_addresses:output_type -> spark.QueryStaticDepositAddressesResponse
+	1,  // 22: spark_ssp_internal.SparkSspInternalService.initiate_static_deposit_swap:output_type -> spark_ssp_internal.StaticDepositSwapResponse
+	3,  // 23: spark_ssp_internal.SparkSspInternalService.reserve_instant_deposit:output_type -> spark_ssp_internal.ReserveInstantDepositResponse
+	1,  // 24: spark_ssp_internal.SparkSspInternalService.recover_instant_deposit:output_type -> spark_ssp_internal.StaticDepositSwapResponse
+	18, // 25: spark_ssp_internal.SparkSspInternalService.query_nodes:output_type -> spark.QueryNodesResponse
+	19, // 26: spark_ssp_internal.SparkSspInternalService.prepare_tree_address:output_type -> spark.PrepareTreeAddressResponse
+	20, // 27: spark_ssp_internal.SparkSspInternalService.create_tree:output_type -> spark.CreateTreeResponse
+	21, // [21:28] is the sub-list for method output_type
+	14, // [14:21] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_spark_ssp_internal_proto_init() }
@@ -270,7 +556,7 @@ func file_spark_ssp_internal_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_spark_ssp_internal_proto_rawDesc), len(file_spark_ssp_internal_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

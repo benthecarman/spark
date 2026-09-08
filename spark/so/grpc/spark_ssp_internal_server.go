@@ -81,3 +81,17 @@ func (s *SparkSspInternalServer) InitiateStaticDepositSwap(ctx context.Context, 
 	}
 	return handler.NewStaticDepositHandler(s.config).InitiateSSPStaticDepositSwap(ctx, req)
 }
+
+func (s *SparkSspInternalServer) ReserveInstantDeposit(ctx context.Context, req *pbssp.ReserveInstantDepositRequest) (*pbssp.ReserveInstantDepositResponse, error) {
+	if err := s.requireSSP(ctx); err != nil {
+		return nil, err
+	}
+	return handler.NewStaticDepositHandler(s.config).ReserveSSPInstantDeposit(ctx, req)
+}
+
+func (s *SparkSspInternalServer) RecoverInstantDeposit(ctx context.Context, req *pbssp.RecoverInstantDepositRequest) (*pbssp.StaticDepositSwapResponse, error) {
+	if err := s.requireSSP(ctx); err != nil {
+		return nil, err
+	}
+	return handler.NewStaticDepositHandler(s.config).RecoverSSPInstantDeposit(ctx, req)
+}

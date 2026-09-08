@@ -22,6 +22,8 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	SparkSspInternalService_QueryStaticDepositAddresses_FullMethodName = "/spark_ssp_internal.SparkSspInternalService/query_static_deposit_addresses"
 	SparkSspInternalService_InitiateStaticDepositSwap_FullMethodName   = "/spark_ssp_internal.SparkSspInternalService/initiate_static_deposit_swap"
+	SparkSspInternalService_ReserveInstantDeposit_FullMethodName       = "/spark_ssp_internal.SparkSspInternalService/reserve_instant_deposit"
+	SparkSspInternalService_RecoverInstantDeposit_FullMethodName       = "/spark_ssp_internal.SparkSspInternalService/recover_instant_deposit"
 	SparkSspInternalService_QueryNodes_FullMethodName                  = "/spark_ssp_internal.SparkSspInternalService/query_nodes"
 	SparkSspInternalService_PrepareTreeAddress_FullMethodName          = "/spark_ssp_internal.SparkSspInternalService/prepare_tree_address"
 	SparkSspInternalService_CreateTree_FullMethodName                  = "/spark_ssp_internal.SparkSspInternalService/create_tree"
@@ -33,6 +35,8 @@ const (
 type SparkSspInternalServiceClient interface {
 	QueryStaticDepositAddresses(ctx context.Context, in *spark.QueryStaticDepositAddressesRequest, opts ...grpc.CallOption) (*spark.QueryStaticDepositAddressesResponse, error)
 	InitiateStaticDepositSwap(ctx context.Context, in *StaticDepositSwapRequest, opts ...grpc.CallOption) (*StaticDepositSwapResponse, error)
+	ReserveInstantDeposit(ctx context.Context, in *ReserveInstantDepositRequest, opts ...grpc.CallOption) (*ReserveInstantDepositResponse, error)
+	RecoverInstantDeposit(ctx context.Context, in *RecoverInstantDepositRequest, opts ...grpc.CallOption) (*StaticDepositSwapResponse, error)
 	QueryNodes(ctx context.Context, in *spark.QueryNodesRequest, opts ...grpc.CallOption) (*spark.QueryNodesResponse, error)
 	PrepareTreeAddress(ctx context.Context, in *spark.PrepareTreeAddressRequest, opts ...grpc.CallOption) (*spark.PrepareTreeAddressResponse, error)
 	CreateTree(ctx context.Context, in *spark.CreateTreeRequest, opts ...grpc.CallOption) (*spark.CreateTreeResponse, error)
@@ -60,6 +64,26 @@ func (c *sparkSspInternalServiceClient) InitiateStaticDepositSwap(ctx context.Co
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(StaticDepositSwapResponse)
 	err := c.cc.Invoke(ctx, SparkSspInternalService_InitiateStaticDepositSwap_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sparkSspInternalServiceClient) ReserveInstantDeposit(ctx context.Context, in *ReserveInstantDepositRequest, opts ...grpc.CallOption) (*ReserveInstantDepositResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReserveInstantDepositResponse)
+	err := c.cc.Invoke(ctx, SparkSspInternalService_ReserveInstantDeposit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sparkSspInternalServiceClient) RecoverInstantDeposit(ctx context.Context, in *RecoverInstantDepositRequest, opts ...grpc.CallOption) (*StaticDepositSwapResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StaticDepositSwapResponse)
+	err := c.cc.Invoke(ctx, SparkSspInternalService_RecoverInstantDeposit_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -102,6 +126,8 @@ func (c *sparkSspInternalServiceClient) CreateTree(ctx context.Context, in *spar
 type SparkSspInternalServiceServer interface {
 	QueryStaticDepositAddresses(context.Context, *spark.QueryStaticDepositAddressesRequest) (*spark.QueryStaticDepositAddressesResponse, error)
 	InitiateStaticDepositSwap(context.Context, *StaticDepositSwapRequest) (*StaticDepositSwapResponse, error)
+	ReserveInstantDeposit(context.Context, *ReserveInstantDepositRequest) (*ReserveInstantDepositResponse, error)
+	RecoverInstantDeposit(context.Context, *RecoverInstantDepositRequest) (*StaticDepositSwapResponse, error)
 	QueryNodes(context.Context, *spark.QueryNodesRequest) (*spark.QueryNodesResponse, error)
 	PrepareTreeAddress(context.Context, *spark.PrepareTreeAddressRequest) (*spark.PrepareTreeAddressResponse, error)
 	CreateTree(context.Context, *spark.CreateTreeRequest) (*spark.CreateTreeResponse, error)
@@ -120,6 +146,12 @@ func (UnimplementedSparkSspInternalServiceServer) QueryStaticDepositAddresses(co
 }
 func (UnimplementedSparkSspInternalServiceServer) InitiateStaticDepositSwap(context.Context, *StaticDepositSwapRequest) (*StaticDepositSwapResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method InitiateStaticDepositSwap not implemented")
+}
+func (UnimplementedSparkSspInternalServiceServer) ReserveInstantDeposit(context.Context, *ReserveInstantDepositRequest) (*ReserveInstantDepositResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReserveInstantDeposit not implemented")
+}
+func (UnimplementedSparkSspInternalServiceServer) RecoverInstantDeposit(context.Context, *RecoverInstantDepositRequest) (*StaticDepositSwapResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecoverInstantDeposit not implemented")
 }
 func (UnimplementedSparkSspInternalServiceServer) QueryNodes(context.Context, *spark.QueryNodesRequest) (*spark.QueryNodesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method QueryNodes not implemented")
@@ -184,6 +216,42 @@ func _SparkSspInternalService_InitiateStaticDepositSwap_Handler(srv interface{},
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SparkSspInternalServiceServer).InitiateStaticDepositSwap(ctx, req.(*StaticDepositSwapRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SparkSspInternalService_ReserveInstantDeposit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReserveInstantDepositRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SparkSspInternalServiceServer).ReserveInstantDeposit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SparkSspInternalService_ReserveInstantDeposit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SparkSspInternalServiceServer).ReserveInstantDeposit(ctx, req.(*ReserveInstantDepositRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SparkSspInternalService_RecoverInstantDeposit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecoverInstantDepositRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SparkSspInternalServiceServer).RecoverInstantDeposit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SparkSspInternalService_RecoverInstantDeposit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SparkSspInternalServiceServer).RecoverInstantDeposit(ctx, req.(*RecoverInstantDepositRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -256,6 +324,14 @@ var SparkSspInternalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "initiate_static_deposit_swap",
 			Handler:    _SparkSspInternalService_InitiateStaticDepositSwap_Handler,
+		},
+		{
+			MethodName: "reserve_instant_deposit",
+			Handler:    _SparkSspInternalService_ReserveInstantDeposit_Handler,
+		},
+		{
+			MethodName: "recover_instant_deposit",
+			Handler:    _SparkSspInternalService_RecoverInstantDeposit_Handler,
 		},
 		{
 			MethodName: "query_nodes",

@@ -122,6 +122,8 @@ func sparkSspInternalServicePolicies() map[string]Policy {
 		pbssp.SparkSspInternalService_PrepareTreeAddress_FullMethodName:          sspInternal,
 		pbssp.SparkSspInternalService_QueryStaticDepositAddresses_FullMethodName: sspInternal,
 		pbssp.SparkSspInternalService_InitiateStaticDepositSwap_FullMethodName:   sspInternal,
+		pbssp.SparkSspInternalService_ReserveInstantDeposit_FullMethodName:       sspInternal,
+		pbssp.SparkSspInternalService_RecoverInstantDeposit_FullMethodName:       sspInternal,
 		pbssp.SparkSspInternalService_QueryNodes_FullMethodName:                  sspInternal,
 		pbssp.SparkSspInternalService_CreateTree_FullMethodName:                  sspInternal,
 	}

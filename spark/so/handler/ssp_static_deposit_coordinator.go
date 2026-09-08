@@ -172,7 +172,7 @@ func (o *StaticDepositHandler) InitiateSSPStaticDepositSwap(ctx context.Context,
 		if err != nil {
 			return nil, err
 		}
-		transferProto, err := transfer.MarshalProto(ctx)
+		transferProto, err := marshalSSPDepositTransfer(ctx, transfer)
 		if err != nil {
 			return nil, err
 		}
