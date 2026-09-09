@@ -31,11 +31,16 @@ func TestSSPListenerRegistrationAndPolicy(t *testing.T) {
 	require.True(t, ok)
 	service, ok := services[pbssp.SparkSspInternalService_ServiceDesc.ServiceName]
 	require.True(t, ok)
-	require.Len(t, service.Methods, 2)
+	require.Len(t, service.Methods, 7)
 
 	for _, method := range []string{
 		pbssp.SparkSspInternalService_PrepareTreeAddress_FullMethodName,
 		pbssp.SparkSspInternalService_CreateTree_FullMethodName,
+		pbssp.SparkSspInternalService_QueryNodes_FullMethodName,
+		pbssp.SparkSspInternalService_QueryStaticDepositAddresses_FullMethodName,
+		pbssp.SparkSspInternalService_InitiateStaticDepositSwap_FullMethodName,
+		pbssp.SparkSspInternalService_ReserveInstantDeposit_FullMethodName,
+		pbssp.SparkSspInternalService_RecoverInstantDeposit_FullMethodName,
 	} {
 		policy, ok := rpcpolicy.LookUp(method)
 		require.True(t, ok)

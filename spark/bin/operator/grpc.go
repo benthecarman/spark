@@ -40,7 +40,7 @@ func RegisterPublicGrpcServers(
 	eventsRouter *events.EventRouter,
 	rwClient *partner.RisingWaveClient,
 ) error {
-	if args.RunningLocally {
+	if args.RunningLocally && !args.DisableMockServer {
 		mockServer := sparkgrpc.NewMockServer(config, dbClient, ephemeralDBClient)
 		pbmock.RegisterMockServiceServer(grpcServer, mockServer)
 	}

@@ -364,11 +364,8 @@ func (r *RateLimiter) takeTokenForKey(ctx context.Context, key string, tokens ui
 		}
 	}
 
-	if remaining == 0 {
-		return tokens, 0, errors.ResourceExhaustedRateLimitExceeded(fmt.Errorf("%s rate limit exceeded", label))
-	}
-
-	// Attempt to take a token.
+	// Take advances the store's window; Get only reads the cached balance.
+	// Even an empty bucket must reach Take so it can refill after expiry.
 	ok, err := r.store.Take(ctx, key)
 	if err != nil {
 		logger.Errorf("Rate limit store failed on Take, failing open. key=%s, err=%v", sanitizeKey(key), err)
@@ -376,13 +373,12 @@ func (r *RateLimiter) takeTokenForKey(ctx context.Context, key string, tokens ui
 	}
 
 	if !ok {
-		// Allow the request to proceed. Either:
-		// 1) another request took the last token between Get and Take or
-		// 2) the bucket was evicted in between Get and Take.
-		// This can be relatively frequent under high concurrency; log at debug level to avoid
-		// overwhelming production logs while still retaining visibility when needed.
-		logger.Debugf("Rate limit race condition: Get reported tokens, but Take failed. Allowing request. key=%s", sanitizeKey(key))
-		return tokens, tokens, nil
+		return tokens, 0, errors.ResourceExhaustedRateLimitExceeded(fmt.Errorf("%s rate limit exceeded", label))
+	}
+
+	// A successful Take from an empty cached bucket refilled it first.
+	if remaining == 0 {
+		remaining = tokens
 	}
 
 	// Success. The Take operation decremented the token count.
